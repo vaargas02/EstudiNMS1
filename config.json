@@ -1,0 +1,18 @@
+{
+  "id": "raiz-nervio",
+  "nombre": "Raíz y nervio",
+  "subtitulo": "Inervación, dermatomas y EMG",
+  "version": "2.0.0",
+  "almacen": { "db": "raiz-nervio", "prefijo": "rn:" },
+  "colores": {
+    "papel": "#F1F4F7",
+    "papelOscuro": "#101827",
+    "acento": "#0E7C7B"
+  },
+  "etiquetaBloque": "Bloque",
+  "modulos": { "teoria": false },
+  "fuentes": [
+    "Inervación: *Aids to the Examination of the Peripheral Nervous System* (O'Brien, 6.ª ed.). Raíz principal marcada; accesorias entre paréntesis. Dermatomas: puntos clave de la ISNCSCI (ASIA) y mapa basado en la evidencia de Lee et al. (2008). Las raíces y los dermatomas varían entre fuentes y personas.",
+    "Imágenes de músculos: Wikimedia Commons, en su mayoría láminas de *Gray's Anatomy* (1918, dominio público). Autoría y licencia bajo cada imagen."
+  ]
+}
