@@ -2,7 +2,7 @@
   "id": "raiz-nervio",
   "nombre": "Raíz y nervio",
   "subtitulo": "Inervación, dermatomas y EMG",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "almacen": { "db": "raiz-nervio", "prefijo": "rn:" },
   "colores": {
     "papel": "#F1F4F7",

@@ -318,3 +318,22 @@ button { cursor: pointer; }
 .lb-scroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; display: flex; align-items: center; justify-content: center; padding: 12px; }
 .lb-scroll img { max-width: 100%; height: auto; background: #fff; border-radius: 6px; }
 .lb-close { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px; z-index: 2; background: rgba(255,255,255,.9); color: #15233C; }
+
+/* Botones de confianza y menú de tres puntos */
+.acciones { margin-top: 14px; }
+.conf-row { display: flex; gap: 8px; }
+.conf-row.solo-mas { justify-content: flex-end; }
+.btn.conf { flex: 1; background: transparent; border-color: var(--line); color: var(--muted); padding: 11px 8px; }
+.btn.conf.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+.btn.mas { flex: 0 0 48px; background: transparent; border-color: var(--line); color: var(--muted); padding: 11px 0; letter-spacing: 1px; }
+.btn.mas[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.proximo { font-size: .82rem; color: var(--muted); margin: 8px 0 0; }
+.feedback .acciones .btn.primary { margin-top: 12px; }
+.menu-mas { margin-top: 10px; border: 1.5px solid var(--line); border-radius: var(--radius-m); background: var(--surface); overflow: hidden; }
+.menu-mas button { display: block; width: 100%; text-align: left; padding: 13px 14px; background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--ink); }
+.menu-mas button:last-child { border-bottom: 0; }
+.menu-mas button.tenue { color: var(--muted); }
+.menu-mas button:disabled { color: var(--muted); cursor: default; }
+.apartadas li { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.apartadas li span { font-size: .9rem; }
+.btn.small { flex: 0 0 auto; padding: 7px 12px; font-size: .85rem; }

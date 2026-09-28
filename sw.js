@@ -1,5 +1,5 @@
 // Service worker: cache-first, offline total
-const CACHE = 'raiz-nervio-v2.0.0';
+const CACHE = 'raiz-nervio-v2.1.0';
 const FILES = ['./', './index.html', './estilos.css', './motor.js', './tema.js', './config.json',
   './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
