@@ -16,7 +16,7 @@ const BLOQUES = [
   { id: 'mi',   name: 'Miembro inferior',        short: 'MI',   weight: 2 },
   { id: 'ax',   name: 'Craneal y axial',         short: 'Axial', weight: 1 },
   { id: 'refl', name: 'Reflejos',                short: 'Refl', weight: 1 },
-  { id: 'mio',  name: 'Miotomas clave',          short: 'Mio',  weight: 1 },
+  { id: 'mio',  name: 'Exploración por raíz',    short: 'Raíz', weight: 1 },
   { id: 'plex', name: 'Plexos',                  short: 'Plexo', weight: 1 },
   { id: 'derm', name: 'Dermatomas',              short: 'Derm', weight: 2 },
   { id: 'cut',  name: 'Territorios cutáneos',    short: 'Cut',  weight: 1 },
@@ -40,7 +40,7 @@ const MUSCLES = [
   // ---------------- MIEMBRO SUPERIOR ----------------
   M('trapecio', 'Trapecio', 'ms', 'Accesorio espinal (XI)', 'xi', [], [], 'Elevación y retracción de la escápula', 'escapula', false,
     'Inervación motora por el XI par, con aferencias de C3-C4 por el plexo cervical. Su debilidad da escápula alada lateral (el ángulo inferior se desplaza hacia fuera) y hombro caído. Lesión típica: cirugía del triángulo posterior del cuello.'),
-  M('romboides', 'Romboides', 'ms', 'Dorsal de la escápula', 'dorsesc', ['C4', 'C5'], [], 'Retracción y elevación de la escápula', 'escapula', false,
+  M('romboides', 'Romboides', 'ms', 'Dorsal de la escápula', 'dorsesc', ['C5'], ['C4'], 'Retracción y elevación de la escápula', 'escapula', false,
     'El dorsal de la escápula sale directamente de la raíz C5. Por eso distingue una radiculopatía C5 (romboides afectado) de una lesión del tronco superior (romboides preservado).'),
   M('serrato', 'Serrato anterior', 'ms', 'Torácico largo', 'toraclargo', ['C5', 'C6', 'C7'], [], 'Protracción de la escápula y fijación contra el tórax', 'escapula', true,
     'Su debilidad produce escápula alada medial, más evidente al empujar contra la pared. El torácico largo nace directamente de las raíces: afectado en radiculopatías, preservado en lesiones de troncos. Frecuente en Parsonage-Turner.'),
@@ -226,18 +226,29 @@ const REFLEXES = [
     'Aferente y eferente por el V par. Exaltado en lesiones por encima de la protuberancia: en ELA indica afectación de 1.ª motoneurona bulbar.', []],
 ];
 
-// Miotomas ISNCSCI
-const MYOTOMES = [
-  ['C5', 'Flexores del codo'],
-  ['C6', 'Extensores de la muñeca'],
-  ['C7', 'Extensores del codo'],
-  ['C8', 'Flexores de los dedos (IFD del medio)'],
-  ['T1', 'Abductores de los dedos (meñique)'],
-  ['L2', 'Flexores de la cadera'],
-  ['L3', 'Extensores de la rodilla'],
-  ['L4', 'Dorsiflexores del tobillo'],
-  ['L5', 'Extensores largos de los dedos (dedo gordo)'],
-  ['S1', 'Flexores plantares del tobillo'],
+// Exploración motora por raíz (la de la consulta, no la ISNCSCI)
+// [raíz, movimiento que se explora, músculo(s), reflejo, perla, raíces que no valen como distractor]
+const RAICES = [
+  ['C5', 'Abducción del hombro', 'Deltoides (el supraespinoso inicia los primeros 15°)', 'Bicipital',
+    'Bicipital y estilorradial son ambos C5-C6. El romboides es C5 casi puro: si está débil, la lesión es radicular y no del tronco superior.', ['C6']],
+  ['C6', 'Flexión del codo y supinación', 'Bíceps y braquiorradial', 'Estilorradial',
+    'Bíceps es C5-C6 y braquiorradial C5-C6: lo que inclina hacia C6 son las parestesias del pulgar y el pronador redondo débil.', ['C5']],
+  ['C7', 'Extensión del codo', 'Tríceps, con extensión de muñeca y dedos', 'Tricipital',
+    'La radiculopatía cervical más frecuente. El flexor radial del carpo es del mediano pero también C7: su debilidad junto a la del tríceps localiza la raíz.', []],
+  ['C8', 'Flexión de los dedos', 'Flexor profundo de los dedos', 'Flexor de los dedos',
+    'Parestesias en meñique y borde cubital. Si el cutáneo antebraquial medial está alterado, es C8 o tronco inferior, no neuropatía cubital.', ['T1']],
+  ['T1', 'Abducción y aducción de los dedos', 'Interóseos y abductor del meñique', 'Ninguno',
+    'Atrofia de intrínsecos. El abductor corto del pulgar (mediano) también es T1: su afectación con los intrínsecos cubitales señala la raíz.', ['C8']],
+  ['L2', 'Flexión de la cadera', 'Iliopsoas', 'Aductor',
+    'Iliopsoas débil con cuádriceps y aductores normales orienta a lesión más proximal (plexo lumbar o psoas).', ['L3']],
+  ['L3', 'Extensión de la rodilla', 'Cuádriceps, con los aductores', 'Rotuliano',
+    'Cuádriceps y aductores débiles juntos: raíz o plexo lumbar. Solo el cuádriceps: nervio femoral.', ['L4']],
+  ['L4', 'Dorsiflexión e inversión del tobillo', 'Tibial anterior', 'Rotuliano',
+    'El tibial anterior es L4-L5. Lo que separa L4 de L5 es el rotuliano (abolido en L4) y la sensibilidad del maléolo medial.', ['L5']],
+  ['L5', 'Extensión del dedo gordo', 'Extensor largo del dedo gordo, con glúteo medio y tibial posterior', 'Isquiotibial medial',
+    'Trío de la radiculopatía L5: dedo gordo, abducción de cadera e inversión del pie. Los tres son normales en la neuropatía peroneal.', []],
+  ['S1', 'Flexión plantar y eversión', 'Gastrocnemio y sóleo, con los peroneos y el glúteo mayor', 'Aquíleo',
+    'Explórala de pie, sobre una pierna: la debilidad leve de flexión plantar no se ve en camilla.', []],
 ];
 
 const PLEXUS = [
@@ -881,6 +892,29 @@ function muscleProfile(m) {
     <dt>Función</dt><dd>${esc(m.act)}</dd></dl>`;
 }
 
+// Dentro del bloque craneal y axial, los distractores solo pueden salir de la
+// misma zona: si no, al elevador del párpado le salen opciones del abdomen.
+const ZONA = {
+  parpado: 'ocular', ojo: 'ocular',
+  facial: 'craneal', mandibula: 'craneal', lengua: 'craneal', bulbar: 'craneal',
+  cuello: 'axial', tronco: 'axial', resp: 'axial',
+};
+const ORDEN_ZONA = {
+  ocular: ['ocular', 'craneal', 'axial'],
+  craneal: ['craneal', 'ocular', 'axial'],
+  axial: ['axial', 'craneal', 'ocular'],
+};
+// candidatos de la misma zona; solo si no llegan a tres se pasa a la de al lado
+function zonaPool(m, lista) {
+  if (m.r !== 'ax') return lista;
+  const out = [];
+  for (const z of (ORDEN_ZONA[ZONA[m.fam]] || ['craneal', 'ocular', 'axial'])) {
+    out.push(...lista.filter(x => ZONA[x.fam] === z));
+    if (out.length >= 3) break;
+  }
+  return out;
+}
+
 function buildCards() {
   const cards = [];
   const add = c => cards.push(c);
@@ -903,21 +937,21 @@ function buildCards() {
       id: m.id + ':nervio', block: m.r, kind: 'mcq', title: m.n, q: '¿Qué nervio lo inerva?', tags, answer: m.nerve,
       make: () => {
         const bad = [m.group, ...(RELATED[m.group] || [])];
-        const pool = uniq(region.filter(x => !bad.includes(x.group) && x.nerve !== m.nerve).map(x => x.nerve));
+        const pool = uniq(zonaPool(m, region.filter(x => !bad.includes(x.group) && x.nerve !== m.nerve)).map(x => x.nerve));
         return { options: shuffle([m.nerve, ...pick(pool, 3)]), correct: m.nerve, ex: exFullFn() };
       },
     });
     add({
       id: m.id + ':funcion', block: m.r, kind: 'mcq', title: m.n, q: '¿Cuál es su función principal?', tags, answer: m.act,
       make: () => {
-        const pool = uniq(region.filter(x => x.fam !== m.fam && x.act !== m.act).map(x => x.act));
+        const pool = uniq(zonaPool(m, region.filter(x => x.fam !== m.fam && x.act !== m.act)).map(x => x.act));
         return { options: shuffle([m.act, ...pick(pool, 3)]), correct: m.act, ex: exFullFn() };
       },
     });
     if (m.inv) add({
       id: m.id + ':inv', block: m.r, kind: 'mcq', title: m.act, q: '¿Qué músculo se encarga principalmente de esto?', tags, answer: m.n,
       make: () => {
-        const pool = uniq(region.filter(x => x.fam !== m.fam && x.act !== m.act).map(x => x.n));
+        const pool = uniq(zonaPool(m, region.filter(x => x.fam !== m.fam && x.act !== m.act)).map(x => x.n));
         return { options: shuffle([m.n, ...pick(pool, 3)]), correct: m.n, ex: exFullFn() };
       },
     });
@@ -926,7 +960,11 @@ function buildCards() {
   for (const [id, group, label, r] of NOT_NERVE) {
     const inG = MUSCLES.filter(m => m.group === group);
     const excl = new Set(['braquial', 'aductmayor']);
-    const out = MUSCLES.filter(m => m.r === r && m.group !== group && !excl.has(m.id) && !(['tibial', 'peroneo'].includes(group) && m.group === 'ciatico'));
+    // el intruso debe compartir raíces con los del nervio: si no, se acierta por descarte
+    const raicesG = new Set(inG.flatMap(m => m.roots));
+    const out = MUSCLES.filter(m => m.r === r && m.group !== group && !excl.has(m.id)
+      && !(['tibial', 'peroneo'].includes(group) && m.group === 'ciatico')
+      && m.roots.some(x => raicesG.has(x)));
     add({
       id, block: r, kind: 'mcq', q: `¿Cuál de estos músculos NO está inervado por ${label}?`, tags: [],
       answer: `Inerva: ${inG.map(m => m.n).join(', ')}.`,
@@ -943,21 +981,32 @@ function buildCards() {
 
   curated('refl', REFLEXES);
 
-  // Miotomas
-  const mioList = MYOTOMES.map(([l, mv]) => `${l}: ${mv.toLowerCase()}`).join('; ');
-  const mioEx = `<p>Músculos clave ISNCSCI. ${esc(mioList)}.</p>`;
-  MYOTOMES.forEach(([lvl, mov], i) => {
+  // Raíces: exploración motora
+  const raizLista = RAICES.map(([r, mov]) => `${r}: ${mov.toLowerCase()}`).join('; ');
+  const raizEx = ([r, mov, mus, refl, perla]) => `<p class="ex-title">Raíz ${esc(r)}</p>
+    <dl class="profile"><dt>Exploración</dt><dd>${esc(mov)}</dd><dt>Músculos</dt><dd>${esc(mus)}</dd><dt>Reflejo</dt><dd>${esc(refl)}</dd></dl>
+    <p>${esc(perla)}</p><p class="note">${esc(raizLista)}.</p>`;
+  RAICES.forEach((fila, i) => {
+    const [r, mov, mus, refl, , evitar] = fila;
+    const brazo = x => ['C', 'T'].includes(x[0]);
+    const otras = RAICES.filter(x => x[0] !== r && brazo(x[0]) === brazo(r));
     add({
-      id: 'mio_lvl_' + lvl, block: 'mio', kind: 'mcq', title: lvl, q: '¿Qué movimiento es su músculo clave en la ISNCSCI?', tags: [lvl], answer: mov,
-      make: () => ({ options: shuffle([mov, ...pick(MYOTOMES.filter(x => x[0] !== lvl).map(x => x[1]), 3)]), correct: mov, ex: mioEx }),
+      id: 'raiz_expl_' + r, block: 'mio', kind: 'mcq', title: 'Raíz ' + r, q: '¿Qué movimiento exploras para valorarla?', tags: [r], answer: mov,
+      make: () => ({ options: shuffle([mov, ...pick(otras.map(x => x[1]), 3)]), correct: mov, ex: raizEx(fila) }),
     });
     add({
-      id: 'mio_mov_' + lvl, block: 'mio', kind: 'mcq', title: mov, q: '¿Qué nivel explora en la ISNCSCI?', tags: [lvl], answer: lvl,
+      id: 'raiz_mov_' + r, block: 'mio', kind: 'mcq', title: mov, q: '¿Qué raíz valora sobre todo?', tags: [r], answer: r,
       make: () => {
-        const lv = MYOTOMES.map(x => x[0]);
-        const near = lv.filter((x, j) => j !== i && Math.abs(j - i) <= 3);
-        return { options: shuffle([lvl, ...pick(near, 3)]), correct: lvl, ex: mioEx };
+        const mismaExtremidad = x => (['C', 'T'].includes(x[0])) === (['C', 'T'].includes(r[0]));
+        const libres = RAICES.map(x => x[0]).filter(x => x !== r && mismaExtremidad(x) && !(evitar || []).includes(x));
+        const cerca = libres.filter(x => Math.abs(RAICES.findIndex(y => y[0] === x) - i) <= 3);
+        const pool = uniq([...pick(cerca, 3), ...libres]);
+        return { options: shuffle([r, ...pool.slice(0, 3)]), correct: r, ex: raizEx(fila) };
       },
+    });
+    if (refl !== 'Ninguno') add({
+      id: 'raiz_refl_' + r, block: 'mio', kind: 'mcq', title: 'Raíz ' + r, q: '¿Qué reflejo la acompaña?', tags: [r], answer: refl,
+      make: () => ({ options: shuffle([refl, ...pick(uniq(otras.map(x => x[3]).filter(x => x !== 'Ninguno' && x !== refl)), 3)]), correct: refl, ex: raizEx(fila) }),
     });
   });
 
@@ -1103,7 +1152,7 @@ function viewDrawings() {
     <tr><td>Flexor de los dedos</td><td>C8</td></tr><tr><td>Abdominales</td><td>T8–T12</td></tr><tr><td>Cremastérico</td><td>L1–L2</td></tr>
     <tr><td>Aductor</td><td>L2–L4</td></tr><tr><td>Rotuliano</td><td>L3–L4</td></tr><tr><td>Isquiotibial medial</td><td>L5</td></tr>
     <tr><td>Aquíleo</td><td>S1</td></tr><tr><td>Anal</td><td>S2–S4</td></tr></table></article>
-  <article class="draw"><h3>Músculos clave ISNCSCI</h3><table class="ref">${MYOTOMES.map(([l, m]) => `<tr><td>${l}</td><td>${m}</td></tr>`).join('')}</table></article>`;
+  <article class="draw"><h3>Exploración motora por raíz</h3><table class="ref">${RAICES.map(([r, mov, mus]) => `<tr><td>${r}</td><td>${mov}<br><span class="sub">${mus}</span></td></tr>`).join('')}</table></article>`;
 }
 
 

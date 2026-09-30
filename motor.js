@@ -2,7 +2,7 @@
 //  Motor de apps de estudio — genérico, no se edita por tema.
 //  Lo propio de cada app vive en config.json y en tema.js.
 // ============================================================
-const MOTOR_VERSION = '2.1.0';
+const MOTOR_VERSION = '2.0.0';
 let CFG = {};        // config.json
 let BLOCKS = [];     // TEMA.bloques
 let CARDS = [], CARD = {}, CURRICULUM = [];
@@ -70,7 +70,6 @@ let S = null;
 function defaultState() {
   return {
     v: 1, cards: {}, bank: 0, lastGrant: null, history: {},
-    hidden: {}, menos: {},
     settings: { perDay: 10, theme: 'auto', thinkFirst: true, blocks: Object.fromEntries(BLOCKS.map(b => [b.id, true])) },
   };
 }
@@ -111,7 +110,7 @@ function curriculum() {
 }
 
 // ---------- planificación ----------
-const enabled = c => S.settings.blocks[c.block] !== false && !S.hidden[c.id];
+const enabled = c => S.settings.blocks[c.block] !== false;
 function unseenIds() { return CURRICULUM.filter(id => !S.cards[id] && enabled(CARD[id])); }
 function dueIds(day = todayKey()) {
   return CARDS.filter(c => enabled(c) && S.cards[c.id] && S.cards[c.id].due <= day).map(c => c.id);
@@ -124,56 +123,17 @@ function grantDaily() {
 }
 function pendingNew() { return Math.min(S.bank, unseenIds().length); }
 
-// Programa una tarjeta. Si se acertó, el grado decide cuánto sube en la
-// escalera de intervalos: 'dude' se queda donde está y repite el mismo
-// intervalo, 'normal' sube un peldaño, 'facil' sube dos.
-// `prev` es el estado que tenía la tarjeta ANTES de responder; se pasa para
-// poder reprogramarla si se cambia de grado, sin acumular repasos de más.
-function programar(id, correct, grado = 'normal', prev = null) {
+function schedule(id, correct) {
   const t = todayKey();
-  const base = prev || { l: 0, r: 0, w: 0, first: t };
-  const st = Object.assign({}, base);
-  if (correct) {
-    const salto = grado === 'facil' ? 2 : grado === 'dude' ? 0 : 1;
-    st.l = Math.min(Math.max(base.l + salto, 1), INTERVALS.length);
-    let dias = INTERVALS[st.l - 1];
-    if (S.menos[id]) dias = Math.min(dias * 3, 365);
-    st.due = addDays(t, dias);
-    st.r = base.r + 1;
-  } else {
-    st.l = 0; st.due = addDays(t, 1); st.w = base.w + 1;
-  }
+  const st = S.cards[id] || { l: 0, r: 0, w: 0, first: t };
+  const isNew = !S.cards[id];
+  if (correct) { st.l = Math.min(st.l + 1, INTERVALS.length); st.due = addDays(t, INTERVALS[st.l - 1]); st.r++; }
+  else { st.l = 0; st.due = addDays(t, 1); st.w++; }
   st.last = t;
   S.cards[id] = st;
-  return st;
-}
-
-// Cambia el grado de la tarjeta que se acaba de responder.
-function marcarGrado(g) {
-  const cur = session && session.cur;
-  if (!cur || !cur.answered || !cur.ok || !cur.programada) return;
-  cur.grado = cur.grado === g ? 'normal' : g;
-  programar(cur.id, true, cur.grado, cur.prev);
-  save(); render();
-}
-
-// Espaciar: el intervalo de esta tarjeta se multiplica por 3 de aquí en adelante.
-function espaciarTarjeta(id) {
-  S.menos[id] = true;
-  const cur = session && session.cur;
-  if (cur && cur.id === id && cur.answered && cur.programada) programar(id, cur.ok, cur.grado || 'normal', cur.prev);
-  save();
-}
-
-// Ocultar: deja de entrar en las sesiones. Se recupera desde Ajustes.
-function ocultarTarjeta(id) {
-  S.hidden[id] = true;
-  save();
-  if (!session) { render(); return; }
-  const resto = session.queue.slice(session.idx + 1).filter(q => q !== id);
-  session.queue = session.queue.slice(0, session.idx + 1).concat(resto);
-  session.total = session.queue.length;
-  next();
+  if (isNew) S.bank = Math.max(0, S.bank - 1);
+  const h = S.history[t] || (S.history[t] = { n: 0, ok: 0 });
+  h.n++; if (correct) h.ok++;
 }
 
 function streak() {
@@ -237,13 +197,7 @@ function answer(value) {
   const first = !session.seen.has(cur.id);
   session.seen.add(cur.id);
   if (first) {
-    const t = todayKey();
-    cur.prev = S.cards[cur.id] ? Object.assign({}, S.cards[cur.id]) : null;
-    cur.programada = true; cur.grado = 'normal';
-    if (!cur.prev) S.bank = Math.max(0, S.bank - 1);
-    programar(cur.id, ok, 'normal', cur.prev);
-    const h = S.history[t] || (S.history[t] = { n: 0, ok: 0 });
-    h.n++; if (ok) h.ok++;
+    schedule(cur.id, ok);
     session.firstN++; if (ok) session.firstOk++;
     save();
   }
@@ -368,34 +322,13 @@ function viewSession() {
       return `<button class="opt ${c}" data-opt="${i}" ${answered ? 'disabled' : ''}>${esc(o)}</button>`;
     }).join('')}</div>`;
   }
-  const cur = session.cur;
-  const grado = cur.grado || 'normal';
-  const st = answered ? S.cards[card.id] : null;
-  const dias = st && ok ? daysBetween(todayKey(), st.due) : 0;
-  const menu = cur.menuAbierto ? `<div class="menu-mas" role="menu">
-      <button role="menuitem" id="m-menos" ${S.menos[card.id] ? 'disabled' : ''}>${S.menos[card.id] ? 'Ya se muestra menos a menudo' : 'Mostrar menos a menudo'}</button>
-      <button role="menuitem" id="m-ocultar">Ocultar esta pregunta</button>
-      <button role="menuitem" class="tenue" id="m-cerrar">Cancelar</button>
-    </div>` : '';
-  const confianza = ok && cur.programada
-    ? `<div class="conf-row">
-        <button class="btn conf ${grado === 'dude' ? 'on' : ''}" id="g-dude" aria-pressed="${grado === 'dude'}">Dudé</button>
-        <button class="btn conf ${grado === 'facil' ? 'on' : ''}" id="g-facil" aria-pressed="${grado === 'facil'}">Muy fácil</button>
-        <button class="btn mas" id="mas" aria-label="Más opciones" aria-expanded="${!!cur.menuAbierto}">⋯</button>
-      </div>`
-    : `<div class="conf-row solo-mas"><button class="btn mas" id="mas" aria-label="Más opciones" aria-expanded="${!!cur.menuAbierto}">⋯</button></div>`;
-  const acciones = `<div class="acciones">${confianza}
-      ${ok && cur.programada ? `<p class="proximo">Vuelve ${dias <= 1 ? 'mañana' : `en ${dias} días`}${S.menos[card.id] ? ' · se muestra menos a menudo' : ''}</p>` : ''}
-      ${menu}
-      <button class="btn primary" id="next">${session.idx + 1 >= session.queue.length ? 'Terminar' : 'Siguiente'}</button>
-    </div>`;
   const fb = answered ? `<section class="feedback ${ok ? 'is-ok' : 'is-bad'}" aria-live="polite">
       <p class="verdict">${ok ? 'Correcto' : 'Incorrecto'}</p>
       ${!ok ? `<p class="right-answer">Respuesta: <strong>${esc(card.kind === 'multi' ? card.answer : inst.correct)}</strong></p>` : ''}
       ${card.fig && card.figEnRespuesta ? `<div class="fig-wrap">${figura(card.fig)}</div>` : ''}
       <div class="ex">${inst.ex}</div>
       ${!ok ? `<p class="again">Volverá a salir al final de esta sesión y mañana.</p>` : ''}
-      ${acciones}
+      <button class="btn primary" id="next">${session.idx + 1 >= session.queue.length ? 'Terminar' : 'Siguiente'}</button>
     </section>` : '';
   return `<main class="page session">
     <header class="s-head">
@@ -427,22 +360,7 @@ function bindSession() {
     rv.focus({ preventScroll: true });
   }
   const ck = $('#check'); if (ck) ck.onclick = () => answer();
-  const nx = $('#next');
-  if (nx) {
-    nx.onclick = next;
-    if (!session.cur.menuAbierto && !session.cur.enfocado) { nx.focus({ preventScroll: true }); session.cur.enfocado = true; }
-  }
-  const gd = $('#g-dude'); if (gd) gd.onclick = () => marcarGrado('dude');
-  const gf = $('#g-facil'); if (gf) gf.onclick = () => marcarGrado('facil');
-  const ms = $('#mas'); if (ms) ms.onclick = () => { session.cur.menuAbierto = !session.cur.menuAbierto; render(); };
-  const mn = $('#m-menos'); if (mn) mn.onclick = () => { espaciarTarjeta(session.cur.id); session.cur.menuAbierto = false; render(); };
-  const mc = $('#m-cerrar'); if (mc) mc.onclick = () => { session.cur.menuAbierto = false; render(); };
-  const mo = $('#m-ocultar');
-  if (mo) mo.onclick = () => {
-    session.cur.menuAbierto = false;
-    if (confirm('Esta pregunta dejará de aparecer en las sesiones. Podrás recuperarla en Ajustes. ¿Ocultarla?')) ocultarTarjeta(session.cur.id);
-    else render();
-  };
+  const nx = $('#next'); if (nx) { nx.onclick = next; nx.focus({ preventScroll: true }); }
 }
 
 function viewSummary() {
@@ -576,18 +494,6 @@ function viewProgress() {
 }
 
 // ---- Ajustes ----
-function vistaApartadas() {
-  const ocultas = Object.keys(S.hidden).filter(id => CARD[id]);
-  const espaciadas = Object.keys(S.menos).filter(id => CARD[id]);
-  if (!ocultas.length && !espaciadas.length) return '';
-  const texto = id => esc(CARD[id].title ? `${CARD[id].title}: ${CARD[id].q}` : CARD[id].q);
-  const lista = (ids, tipo, etq) => `<ul class="clist apartadas">${ids.map(id =>
-    `<li><span>${texto(id)}</span><button class="btn ghost small" data-recuperar="${tipo}|${id}">${etq}</button></li>`).join('')}</ul>`;
-  return `<section class="card-sec"><h2 class="sec-title">Preguntas apartadas</h2>
-    ${ocultas.length ? `<p class="note">Ocultas (${ocultas.length}): no aparecen en las sesiones.</p>${lista(ocultas, 'hidden', 'Recuperar')}` : ''}
-    ${espaciadas.length ? `<p class="note">Con intervalo triplicado (${espaciadas.length}).</p>${lista(espaciadas, 'menos', 'Normal')}` : ''}</section>`;
-}
-
 function viewSettings() {
   return `<h1 class="page-title">Ajustes</h1>
   <section class="card-sec"><h2 class="sec-title">Tarjetas nuevas por día</h2>
@@ -601,7 +507,6 @@ function viewSettings() {
     <ul class="toggles">${BLOCKS.map(b => `<li><label><span>${b.name} <small>${CARDS.filter(c => c.block === b.id).length}</small></span>
       <input type="checkbox" data-blk="${b.id}" ${S.settings.blocks[b.id] !== false ? 'checked' : ''}><i class="sw"></i></label></li>`).join('')}</ul>
     <p class="note">Desactivar un bloque lo retira de las sesiones sin borrar tu progreso.</p></section>
-  ${vistaApartadas()}
   <section class="card-sec"><h2 class="sec-title">Apariencia</h2>
     <div class="seg-ctrl">${[['auto', 'Automática'], ['light', 'Clara'], ['dark', 'Oscura']].map(([k, l]) => `<button data-theme-set="${k}" class="${S.settings.theme === k ? 'on' : ''}">${l}</button>`).join('')}</div></section>
   <section class="card-sec"><h2 class="sec-title">Copia de seguridad</h2>
@@ -634,12 +539,6 @@ function bindCommon() {
   if (pdp) pdp.onclick = () => { S.settings.perDay = Math.min(50, S.settings.perDay + 1); save(); render(); };
   document.querySelectorAll('[data-blk]').forEach(i => i.onchange = () => { S.settings.blocks[i.dataset.blk] = i.checked; save(); });
   const th = $('#think'); if (th) th.onchange = () => { S.settings.thinkFirst = th.checked; save(); };
-  document.querySelectorAll('[data-recuperar]').forEach(b => b.onclick = () => {
-    const i = b.dataset.recuperar.indexOf('|');
-    const tipo = b.dataset.recuperar.slice(0, i), id = b.dataset.recuperar.slice(i + 1);
-    if (tipo === 'hidden') delete S.hidden[id]; else delete S.menos[id];
-    save(); render();
-  });
   document.querySelectorAll('[data-theme-set]').forEach(b => b.onclick = () => { S.settings.theme = b.dataset.themeSet; save(); render(); });
   const ex = $('#exp');
   if (ex) ex.onclick = () => {
@@ -725,7 +624,6 @@ async function arrancar() {
   S = Object.assign(defaultState(), loaded || {});
   S.settings = Object.assign(defaultState().settings, (loaded || {}).settings || {});
   S.settings.blocks = Object.assign(defaultState().settings.blocks, S.settings.blocks || {});
-  S.hidden = S.hidden || {}; S.menos = S.menos || {};
   grantDaily();
   await save();
   render();
